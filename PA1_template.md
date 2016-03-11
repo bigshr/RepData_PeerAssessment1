@@ -1,18 +1,15 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
-```{r}
+
+```r
 #Libraries Used
 library(ggplot2)
 library(plyr)
 ```
 
 ## Loading and preprocessing the data
-```{r}
+
+```r
 activity<-read.csv("data/activity.csv",
                    colClasses=c("integer","Date","integer"))
 
@@ -25,15 +22,15 @@ stepsper5min<-ddply(activity,
                     c("interval"),
                     summarise,
                     meansteps = mean(steps,na.rm=TRUE))
-
 ```
 
 ## What is mean total number of steps taken per day?
 
-Mean total number of steps taken per day is given by `r mean(stepsperday$totalsteps, na.rm=TRUE)`.
-Median number of steps taken per day is given by `r median(stepsperday$totalsteps)`(NA's omitted).
+Mean total number of steps taken per day is given by 9354.2295082.
+Median number of steps taken per day is given by 10395(NA's omitted).
 
-```{r stepshist}
+
+```r
 stepshist<-ggplot(stepsperday,aes(x=totalsteps))+geom_histogram()+
   xlab("Total number of steps")+
   ggtitle("Histogram of total steps in one day")+
@@ -41,8 +38,15 @@ stepshist<-ggplot(stepsperday,aes(x=totalsteps))+geom_histogram()+
 print(stepshist)
 ```
 
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](PA1_template_files/figure-html/stepshist-1.png)
+
 ## What is the average daily activity pattern?
-```{r daypattern,warning=FALSE}
+
+```r
 dayline<-ggplot(stepsper5min,aes(x=interval,y=meansteps))+geom_line()+
   ggtitle("Average steps for each 5-min interval")+
   ylab("Mean steps")+
@@ -50,32 +54,48 @@ dayline<-ggplot(stepsper5min,aes(x=interval,y=meansteps))+geom_line()+
 print(dayline)
 ```
 
+![](PA1_template_files/figure-html/daypattern-1.png)
+
 Raw points with a loess curve for alternative daily activity pattern visualisation :
 
-```{r altdaypattern}
+
+```r
 dayraw<-ggplot(activity,aes(x=interval,y=steps))+geom_point(alpha=.1)+geom_smooth()+
   ggtitle("Steps in each 5-min interval, raw points + loess curve")+
   theme_bw()
 print(dayraw)
 ```
 
-Interval #`r stepsper5min[which(stepsper5min$meansteps==max(stepsper5min$meansteps)), "interval"]` with a mean of `r stepsper5min[which(stepsper5min$meansteps==max(stepsper5min$meansteps)), "meansteps"]` steps is the five minute interval with the highest mean step-count.  
+```
+## Warning: Removed 2304 rows containing non-finite values (stat_smooth).
+```
+
+```
+## Warning: Removed 2304 rows containing missing values (geom_point).
+```
+
+![](PA1_template_files/figure-html/altdaypattern-1.png)
+
+Interval #835 with a mean of 206.1698113 steps is the five minute interval with the highest mean step-count.  
 
 ## Imputing missing values
 
-`r nrow(activity)-sum(complete.cases(activity))` incomplete records are unevenly distributed through the data.
+2304 incomplete records are unevenly distributed through the data.
 
-```{r histincomplete}
+
+```r
 hist(which(complete.cases(activity)),
      main="Count of complete cases (chronological order)",
      xlab="Observation number",
      ylab="Count of complete cases"
      )
-
 ```
+
+![](PA1_template_files/figure-html/histincomplete-1.png)
  Using the average of previous valid observations and the next valid observation, or the average of the relevant 5-min interval if there is no valid previous/next observation, interpolation is done which produces smooth activity-over-the-day lines for each individual day, but is not very fast.
  
-```{r interpolation strategy}
+
+```r
 step_interpolation <- function(rownumber){
   prevrow=rownumber;
   nextrow=rownumber;
@@ -106,7 +126,8 @@ for(n in 1:nrow(activity)){
 ```
 Since, I didn't want to superimpose two histogram, I used density plot and it's similar. The imputed dataset has fewer zeros, the original data is peppered with lone zeros and the imputation strategy above just doesn't reproduce this pattern.
 
-```{r guesscompare}
+
+```r
 stepsperday2<-merge(
   ddply(activity_guessNA,
         c("date"),
@@ -127,8 +148,11 @@ theme_bw()
 print(guesscheck)
 ```
 
+![](PA1_template_files/figure-html/guesscompare-1.png)
+
 Here's the histogram :
-```{r imputedhist}
+
+```r
 histogram<-ggplot(stepsperday2,aes(x=guesstotalsteps))+
     geom_histogram()+
   ggtitle("Histogram of total number of steps per day after missing values imputed")+
@@ -136,13 +160,20 @@ histogram<-ggplot(stepsperday2,aes(x=guesstotalsteps))+
 print(histogram)
 ```
 
-The mean and median total steps are `r mean(stepsperday2$totalsteps,na.rm=TRUE)` and `r median(stepsperday2$totalsteps,na.rm=TRUE)`, for the NA-imputed data the mean and median are  `r mean(stepsperday2$guesstotalsteps,na.rm=TRUE)` and `r median(stepsperday2$guesstotalsteps,na.rm=TRUE)`. 
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](PA1_template_files/figure-html/imputedhist-1.png)
+
+The mean and median total steps are 9354.2295082 and 10395, for the NA-imputed data the mean and median are  9707.219301 and 1.0571\times 10^{4}. 
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 It seems that activity is higher on the weekends, particularly in the middle of the day.
 
-```{r weekends}
+
+```r
 paindays = c("Monday","Tuesday","Wednesday","Thursday","Friday")
 
 activity_guessNA$weekday<-as.factor(ifelse(weekdays(activity_guessNA$date)%in%paindays,"weekday","weekend"))
@@ -160,3 +191,5 @@ weekdayplot<-ggplot(stepsperinterval.weekdaysplit,aes(x=interval,y=meansteps))+
   xlab("Interval number")
 print(weekdayplot)
 ```
+
+![](PA1_template_files/figure-html/weekends-1.png)
